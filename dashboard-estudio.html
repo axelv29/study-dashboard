@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard de Estudio — FING 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f11;
+    --surface: #18181c;
+    --surface2: #222228;
+    --border: #2e2e38;
+    --text: #e8e8f0;
+    --muted: #6b6b7e;
+    --accent-md2: #4ade80;
+    --accent-log: #60a5fa;
+    --warn: #fb923c;
+    --danger: #f87171;
+    --done: #34d399;
+    --mono: 'DM Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  /* ─── Layout ─── */
+  .shell { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+  /* ─── Header ─── */
+  .site-header { margin-bottom: 2.5rem; }
+  .site-header h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
+  .site-header p { font-size: 0.85rem; color: var(--muted); font-family: var(--mono); margin-top: 4px; }
+  .today-pill {
+    display: inline-block; margin-top: 10px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 4px 12px;
+    font-family: var(--mono); font-size: 0.78rem; color: var(--muted);
+  }
+  /* ─── Current week banner ─── */
+  .current-banner {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    padding: 1.2rem 1.5rem;
+    margin-bottom: 2rem;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+  }
+  .current-banner .cb-item { }
+  .current-banner .cb-label {
+    font-family: var(--mono); font-size: 0.72rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px;
+  }
+  .current-banner .cb-topic { font-size: 1rem; font-weight: 600; }
+  .current-banner .cb-topic.md2 { color: var(--accent-md2); }
+  .current-banner .cb-topic.log { color: var(--accent-log); }
+  .current-banner .cb-week { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+  /* ─── Progress bars ─── */
+  .progress-section { margin-bottom: 2rem; }
+  .progress-section h2 {
+    font-size: 0.72rem; font-family: var(--mono); color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem;
+  }
+  .prog-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .prog-label { font-size: 0.82rem; font-family: var(--mono); color: var(--muted); min-width: 140px; }
+  .prog-bar-bg { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .prog-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+  .prog-pct { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); min-width: 36px; text-align: right; }
+  /* ─── Tabs ─── */
+  .tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+  .tab-btn {
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-family: var(--sans); font-size: 0.88rem; font-weight: 500;
+    padding: 10px 20px; border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--text); border-bottom-color: var(--text); }
+  /* ─── Subject tag ─── */
+  .subject-tag {
+    display: inline-block; font-size: 0.7rem; font-family: var(--mono);
+    padding: 2px 8px; border-radius: 4px; font-weight: 500; margin-bottom: 6px;
+  }
+  .tag-md2 { background: rgba(74,222,128,0.12); color: var(--accent-md2); }
+  .tag-log { background: rgba(96,165,250,0.12); color: var(--accent-log); }
+  /* ─── Week cards ─── */
+  .weeks-list { display: flex; flex-direction: column; gap: 8px; }
+  .week-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .week-card.is-current { border-color: rgba(255,255,255,0.2); }
+  .week-card.is-current-md2 { border-left: 3px solid var(--accent-md2); }
+  .week-card.is-current-log { border-left: 3px solid var(--accent-log); }
+  .week-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px; cursor: pointer;
+    user-select: none;
+  }
+  .week-header:hover { background: var(--surface2); }
+  .week-num {
+    font-family: var(--mono); font-size: 0.72rem; color: var(--muted);
+    min-width: 54px;
+  }
+  .week-title-area { flex: 1; }
+  .week-title { font-size: 0.92rem; font-weight: 500; }
+  .week-date { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); margin-top: 1px; }
+  .week-right { display: flex; align-items: center; gap: 10px; }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--surface2); border: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .status-dot.done { background: var(--done); border-color: var(--done); }
+  .status-dot.current-course { background: var(--warn); border-color: var(--warn); }
+  .status-dot.behind { background: var(--danger); border-color: var(--danger); }
+  .understanding-mini {
+    font-family: var(--mono); font-size: 0.7rem;
+    color: var(--muted); min-width: 30px; text-align: right;
+  }
+  .chevron-icon { color: var(--muted); font-size: 0.9rem; transition: transform 0.2s; }
+  .week-card.open .chevron-icon { transform: rotate(180deg); }
+  /* ─── Week body ─── */
+  .week-body { display: none; padding: 0 16px 16px 16px; }
+  .week-card.open .week-body { display: block; }
+  .lessons-list { margin-bottom: 12px; }
+  .lesson-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+  }
+  .lesson-row:last-child { border-bottom: none; }
+  .lesson-check {
+    width: 18px; height: 18px; border: 1px solid var(--border);
+    border-radius: 4px; background: var(--surface2);
+    cursor: pointer; flex-shrink: 0; display: flex; align-items: center;
+    justify-content: center; margin-top: 1px; transition: all 0.15s;
+  }
+  .lesson-check.checked { background: var(--done); border-color: var(--done); }
+  .lesson-check.checked::after { content: '✓'; font-size: 11px; color: #0f0f11; font-weight: 700; }
+  .lesson-text { flex: 1; font-size: 0.88rem; line-height: 1.4; }
+  .lesson-text.checked { color: var(--muted); text-decoration: line-through; }
+  /* ─── Understanding slider ─── */
+  .understanding-row {
+    display: flex; align-items: center; gap: 12px;
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);
+  }
+  .und-label { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); min-width: 90px; }
+  .und-slider { flex: 1; accent-color: var(--accent-md2); }
+  .und-value {
+    font-family: var(--mono); font-size: 0.78rem; min-width: 44px;
+    text-align: right; transition: color 0.2s;
+  }
+  /* ─── Notes ─── */
+  .notes-row { margin-top: 10px; }
+  .notes-label { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); margin-bottom: 4px; }
+  .notes-ta {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-family: var(--mono);
+    font-size: 0.8rem; padding: 8px 10px; resize: vertical; min-height: 56px;
+    outline: none; transition: border-color 0.15s;
+  }
+  .notes-ta:focus { border-color: var(--muted); }
+  /* ─── Practical info ─── */
+  .practico-row { margin-top: 8px; }
+  .practico-pill {
+    display: inline-block; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 5px; font-family: var(--mono); font-size: 0.72rem;
+    color: var(--muted); padding: 3px 10px; margin-right: 6px; margin-top: 4px;
+  }
+  /* ─── Legend ─── */
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  .leg-item { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 0.72rem; color: var(--muted); }
+  .leg-dot { width: 8px; height: 8px; border-radius: 50%; }
+  /* ─── Hidden ─── */
+  .tab-section { display: none; }
+  .tab-section.active { display: block; }
+  /* ─── Responsive ─── */
+  @media (max-width: 600px) {
+    .current-banner { grid-template-columns: 1fr; }
+    .prog-label { min-width: 100px; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="site-header">
+    <h1>Dashboard de Estudio</h1>
+    <p>Ingeniería en Sistemas — FING UDELAR — 2026 Semestre 1</p>
+    <div class="today-pill" id="today-pill">cargando fecha...</div>
+  </header>
+
+  <!-- Current week banner -->
+  <div class="current-banner">
+    <div class="cb-item">
+      <div class="cb-label">MD2 — tema actual del curso</div>
+      <div class="cb-topic md2" id="banner-md2-topic">—</div>
+      <div class="cb-week" id="banner-md2-week">—</div>
+    </div>
+    <div class="cb-item">
+      <div class="cb-label">Lógica — tema actual del curso</div>
+      <div class="cb-topic log" id="banner-log-topic">—</div>
+      <div class="cb-week" id="banner-log-week">—</div>
+    </div>
+  </div>
+
+  <!-- Progress bars -->
+  <div class="progress-section">
+    <h2>progreso general</h2>
+    <div class="prog-row">
+      <span class="prog-label">MD2 — curso</span>
+      <div class="prog-bar-bg"><div class="prog-bar-fill" id="pb-md2-curso" style="background:var(--accent-md2);width:0%"></div></div>
+      <span class="prog-pct" id="pct-md2-curso">0%</span>
+    </div>
+    <div class="prog-row">
+      <span class="prog-label">MD2 — yo voy</span>
+      <div class="prog-bar-bg"><div class="prog-bar-fill" id="pb-md2-yo" style="background:rgba(74,222,128,0.45);width:0%"></div></div>
+      <span class="prog-pct" id="pct-md2-yo">0%</span>
+    </div>
+    <div class="prog-row">
+      <span class="prog-label">Lógica — curso</span>
+      <div class="prog-bar-bg"><div class="prog-bar-fill" id="pb-log-curso" style="background:var(--accent-log);width:0%"></div></div>
+      <span class="prog-pct" id="pct-log-curso">0%</span>
+    </div>
+    <div class="prog-row">
+      <span class="prog-label">Lógica — yo voy</span>
+      <div class="prog-bar-bg"><div class="prog-bar-fill" id="pb-log-yo" style="background:rgba(96,165,250,0.45);width:0%"></div></div>
+      <span class="prog-pct" id="pct-log-yo">0%</span>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="leg-item"><div class="leg-dot" style="background:var(--done)"></div>completada</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--warn)"></div>semana actual del curso</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--danger)"></div>atrasada (curso ya pasó)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--surface2);border:1px solid var(--border)"></div>pendiente</div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('md2',this)">Matemática Discreta 2</button>
+    <button class="tab-btn" onclick="switchTab('log',this)">Lógica</button>
+  </div>
+
+  <div id="tab-md2" class="tab-section active">
+    <div class="weeks-list" id="list-md2"></div>
+  </div>
+  <div id="tab-log" class="tab-section">
+    <div class="weeks-list" id="list-log"></div>
+  </div>
+
+</div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+
+const MD2_WEEKS = [
+  { num: 1, date: "2/3",  topic: "Introducción. División entera y sistemas de numeración.",
+    practico: "P1", notas: "4–7",
+    lessons: ["División entera: definición y teorema", "Sistemas de numeración (decimal, binario, base n)", "Conversión entre bases"] },
+  { num: 2, date: "9/3",  topic: "Divisibilidad y MCD. Bézout. Algoritmo de Euclides extendido.",
+    practico: "P1, P2", notas: "7–13",
+    lessons: ["Divisibilidad y propiedades", "Máximo común divisor", "Identidad de Bézout y corolarios", "Algoritmo de Euclides extendido (sustitución)"] },
+  { num: 3, date: "16/3", topic: "Algoritmo de Euclides extendido (matrices). Ecuaciones diofánticas. TFA.",
+    practico: "P2, P3", notas: "13–21",
+    lessons: ["Euclides extendido con matrices", "Ecuaciones diofánticas lineales", "Problema de Frobenius", "Teorema Fundamental de la Aritmética"] },
+  { num: 4, date: "23/3", topic: "TFA (cont.). Congruencias: definiciones, propiedades y aplicaciones.",
+    practico: "P3, P4", notas: "21–31",
+    lessons: ["TFA: aplicaciones (primos, MCD, mcm)", "Congruencias: definición y relación de equivalencia", "Propiedades de congruencias", "Criterios de divisibilidad"] },
+  { num: 5, date: "6/4",  topic: "Ecuaciones con congruencias. Inverso modular. TCR.",
+    practico: "P4, P5", notas: "30–43",
+    lessons: ["Ecuaciones lineales de congruencia", "Inverso modular", "Teorema Chino del Resto: enunciado y demostración", "Ejemplos del TCR"] },
+  { num: 6, date: "13/4", topic: "Función φ de Euler. Teorema de Fermat-Euler. Exponenciación rápida.",
+    practico: "P5, P6", notas: "44–46",
+    lessons: ["Función de Euler: definición y propiedades", "Valor de φ en potencias de primos", "Teorema de Euler", "Algoritmo de exponenciación rápida"] },
+  { num: 7, date: "20/4", topic: "Repaso primer parcial", practico: "—", notas: "—",
+    lessons: ["Repaso: teoría de números y divisibilidad", "Repaso: congruencias y TCR", "Repaso: función de Euler y aplicaciones"] },
+  { num: 8, date: "25/4–6/5", topic: "PARCIALES", practico: "—", notas: "—",
+    lessons: ["Primer parcial (entre 25/4 y 6/5)"] },
+  { num: 9, date: "7/5",  topic: "Grupos: definición, ejemplos y propiedades. Tablas de Cayley.",
+    practico: "P7", notas: "47–48",
+    lessons: ["Definición de grupo y axiomas", "Ejemplos de grupos", "Propiedades básicas de grupos", "Tablas de Cayley"] },
+  { num: 10, date: "11/5", topic: "Grupos Sn, Dn, ℤn, grupos multiplicativos módulo n.",
+    practico: "P7", notas: "49–51",
+    lessons: ["Grupo de permutaciones Sn", "Grupo diedral Dn", "Grupo aditivo ℤn", "Invertibles módulo n"] },
+  { num: 11, date: "18/5", topic: "Órdenes. Teorema de Lagrange. Subgrupos. Grupos cíclicos.",
+    practico: "P8", notas: "51–56",
+    lessons: ["Orden de un elemento", "Subgrupos y caracterización", "Clases laterales", "Teorema de Lagrange", "Grupos cíclicos"] },
+  { num: 12, date: "25/5", topic: "Homomorfismos, isomorfismos. Teorema de Cayley. Cuaterniones.",
+    practico: "P9", notas: "55–61",
+    lessons: ["Homomorfismos de grupos", "Isomorfismos y teorema", "Teorema de homomorfismos para cíclicos", "Teorema de Cayley"] },
+  { num: 13, date: "1/6",  topic: "Raíces primitivas.",
+    practico: "P10", notas: "62–67",
+    lessons: ["Raíces primitivas: existencia y unicidad", "Cantidad de raíces primitivas", "Logaritmo discreto", "Test de Lucas y primalidad"] },
+  { num: 14, date: "8/6",  topic: "Criptosistemas de César y Vigenère. Diffie-Hellman.",
+    practico: "P11", notas: "68–72",
+    lessons: ["Criptosistema de César", "Criptosistema de Vigenère", "Intercambio de clave Diffie-Hellman"] },
+  { num: 15, date: "15/6", topic: "RSA. Método de Fermat para factorización.",
+    practico: "P12", notas: "72–77",
+    lessons: ["Criptosistema RSA", "Funcionamiento y seguridad de RSA", "Método de Fermat para factorización"] },
+  { num: 16, date: "23/6", topic: "Repaso segundo parcial", practico: "—", notas: "—",
+    lessons: ["Repaso: grupos y subgrupos", "Repaso: raíces primitivas y logaritmo discreto", "Repaso: criptografía"] },
+];
+
+const LOG_WEEKS = [
+  { num: 1, date: "2–6/3",   topic: "Conceptos preliminares. Inducción.",
+    practico: "P1: ej1–10",
+    lessons: ["Conjuntos inductivos", "Principio de inducción", "Primeros ejercicios de inducción"] },
+  { num: 2, date: "9–13/3",  topic: "Recursión.",
+    practico: "P1: ej11–22",
+    lessons: ["Esquemas de recursión", "Definición recursiva de funciones", "Ejercicios de recursión"] },
+  { num: 3, date: "16–20/3", topic: "Lógica Proposicional — Sintaxis.",
+    practico: "P2",
+    lessons: ["Fórmulas proposicionales", "Gramática del lenguaje proposicional", "Árboles de construcción"] },
+  { num: 4, date: "23–27/3", topic: "Lógica Proposicional — Semántica.",
+    practico: "P3",
+    lessons: ["Valuaciones y tablas de verdad", "Tautologías, contradicciones y satisfacibilidad", "Consecuencia semántica"] },
+  { num: 5, date: "6–10/4",  topic: "Lógica Proposicional — Deducción Natural.",
+    practico: "P4",
+    lessons: ["Reglas de introducción y eliminación", "Demostraciones en deducción natural", "Estrategias de prueba"] },
+  { num: 6, date: "13–17/4", topic: "Lógica Proposicional — Completitud.",
+    practico: "P5",
+    lessons: ["Teorema de corrección", "Teorema de completitud", "Consecuencias del teorema"] },
+  { num: 7, date: "20–24/4", topic: "Lógica Proposicional — Repaso General.",
+    practico: "—",
+    lessons: ["Repaso: sintaxis y semántica", "Repaso: deducción natural", "Repaso: completitud"] },
+  { num: 8, date: "25/4–6/5", topic: "PARCIALES",
+    practico: "—",
+    lessons: ["Primer parcial (entre 25/4 y 6/5)"] },
+  { num: 9,  date: "—", topic: "Lógica de Predicados — Sintaxis.",
+    practico: "—",
+    lessons: ["Lenguaje de primer orden", "Términos, fórmulas y variables libres", "Sustitución"] },
+  { num: 10, date: "—", topic: "Lógica de Predicados — Semántica (I).",
+    practico: "—",
+    lessons: ["Estructuras y asignaciones", "Interpretación de fórmulas", "Consecuencia semántica en primer orden"] },
+  { num: 11, date: "—", topic: "Lógica de Predicados — Semántica (II).",
+    practico: "—",
+    lessons: ["Propiedades de la satisfacibilidad", "Teorías de primer orden", "Ejemplos y ejercicios"] },
+  { num: 12, date: "—", topic: "Lógica de Predicados — Deducción Natural.",
+    practico: "—",
+    lessons: ["Reglas para cuantificadores", "Demostraciones con cuantificadores", "Ejercicios"] },
+  { num: 13, date: "—", topic: "Lógica de Predicados — Completitud.",
+    practico: "—",
+    lessons: ["Teorema de corrección en primer orden", "Teorema de completitud de Gödel", "Compacidad"] },
+  { num: 14, date: "—", topic: "Lógica de Predicados — Repaso General.",
+    practico: "—",
+    lessons: ["Repaso sintaxis y semántica de predicados", "Repaso deducción natural", "Resolución de ejercicios"] },
+  { num: 15, date: "—", topic: "Parcial",
+    practico: "—",
+    lessons: ["Segundo parcial de Lógica"] },
+];
+
+// ─── DATES: map MD2 week numbers to real start dates (YYYY-MM-DD) ─────────────
+const MD2_DATES = {
+  1: "2026-03-02", 2: "2026-03-09", 3: "2026-03-16",
+  4: "2026-03-23", 5: "2026-04-06", 6: "2026-04-13",
+  7: "2026-04-20", 8: "2026-04-25", 9: "2026-05-07",
+  10:"2026-05-11", 11:"2026-05-18", 12:"2026-05-25",
+  13:"2026-06-01", 14:"2026-06-08", 15:"2026-06-15",
+  16:"2026-06-23"
+};
+const LOG_DATES = {
+  1: "2026-03-02", 2: "2026-03-09", 3: "2026-03-16",
+  4: "2026-03-23", 5: "2026-04-06", 6: "2026-04-13",
+  7: "2026-04-20", 8: "2026-04-25", 9: "2026-05-11",
+  10:"2026-05-18", 11:"2026-05-25", 12:"2026-06-01",
+  13:"2026-06-08", 14:"2026-06-15", 15:"2026-06-22"
+};
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'fing2026_dashboard';
+let state = {};
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) state = JSON.parse(raw);
+  } catch(e) {}
+  const ensureWeeks = (weeks) => {
+    weeks.forEach(w => {
+      const key = w.num;
+      if (!state[key]) state[key] = {};
+      if (!state[key].lessons) state[key].lessons = {};
+      if (state[key].understanding === undefined) state[key].understanding = 0;
+      if (!state[key].notes) state[key].notes = '';
+    });
+  };
+  if (!state.md2) state.md2 = {};
+  if (!state.log) state.log = {};
+  // re-scope
+  const prevState = state;
+  state = { md2: prevState.md2 || {}, log: prevState.log || {} };
+  MD2_WEEKS.forEach(w => {
+    if (!state.md2[w.num]) state.md2[w.num] = {};
+    if (!state.md2[w.num].lessons) state.md2[w.num].lessons = {};
+    if (state.md2[w.num].understanding === undefined) state.md2[w.num].understanding = 0;
+    if (!state.md2[w.num].notes) state.md2[w.num].notes = '';
+  });
+  LOG_WEEKS.forEach(w => {
+    if (!state.log[w.num]) state.log[w.num] = {};
+    if (!state.log[w.num].lessons) state.log[w.num].lessons = {};
+    if (state.log[w.num].understanding === undefined) state.log[w.num].understanding = 0;
+    if (!state.log[w.num].notes) state.log[w.num].notes = '';
+  });
+}
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+// ─── DATE UTILS ───────────────────────────────────────────────────────────────
+function today() {
+  return new Date();
+}
+
+function parseDate(str) {
+  const [y,m,d] = str.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+
+function getCurrentCourseWeek(weekDates, weeks) {
+  const now = today();
+  let current = null;
+  const nums = weeks.map(w => w.num).sort((a,b) => a-b);
+  for (let i = 0; i < nums.length; i++) {
+    const num = nums[i];
+    if (!weekDates[num]) continue;
+    const start = parseDate(weekDates[num]);
+    const nextNum = nums[i+1];
+    const end = nextNum && weekDates[nextNum] ? parseDate(weekDates[nextNum]) : new Date(start.getTime() + 7*24*60*60*1000);
+    if (now >= start && now < end) { current = num; break; }
+    if (now >= start) current = num;
+  }
+  return current;
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function understColor(v) {
+  if (v === 0) return 'var(--muted)';
+  if (v <= 30) return 'var(--danger)';
+  if (v <= 60) return 'var(--warn)';
+  return 'var(--done)';
+}
+
+function understLabel(v) {
+  if (v === 0) return 'sin marcar';
+  if (v <= 30) return 'poco';
+  if (v <= 60) return 'regular';
+  if (v <= 85) return 'bien';
+  return 'muy bien';
+}
+
+function countChecked(subj, weekNum, total) {
+  const ls = state[subj][weekNum].lessons;
+  return Object.values(ls).filter(Boolean).length;
+}
+
+function weekStatus(subj, weekNum, currentCourseWeek) {
+  const wstate = state[subj][weekNum];
+  const lessons = wstate.lessons;
+  const total = (subj === 'md2' ? MD2_WEEKS : LOG_WEEKS).find(w => w.num === weekNum)?.lessons.length || 1;
+  const allChecked = Object.values(lessons).filter(Boolean).length === total;
+  if (allChecked) return 'done';
+  if (weekNum === currentCourseWeek) return 'current-course';
+  if (currentCourseWeek && weekNum < currentCourseWeek) return 'behind';
+  return 'pending';
+}
+
+function renderWeeks(subj, weeks, weekDates) {
+  const container = document.getElementById('list-' + subj);
+  const currentWeek = getCurrentCourseWeek(weekDates, weeks);
+  let html = '';
+  weeks.forEach(w => {
+    const ws = state[subj][w.num];
+    const total = w.lessons.length;
+    const checked = Object.values(ws.lessons).filter(Boolean).length;
+    const status = weekStatus(subj, w.num, currentWeek);
+    const und = ws.understanding || 0;
+    const isCurrent = w.num === currentWeek;
+    let dotClass = 'status-dot';
+    if (status === 'done') dotClass += ' done';
+    else if (status === 'current-course') dotClass += ' current-course';
+    else if (status === 'behind') dotClass += ' behind';
+
+    let cardClass = 'week-card';
+    if (isCurrent) cardClass += ' is-current is-current-' + subj;
+
+    const lessonsHtml = w.lessons.map((l, i) => {
+      const isChecked = !!ws.lessons[i];
+      return `<div class="lesson-row">
+        <div class="lesson-check ${isChecked ? 'checked' : ''}" data-subj="${subj}" data-week="${w.num}" data-idx="${i}" onclick="toggleLesson(this)"></div>
+        <span class="lesson-text ${isChecked ? 'checked' : ''}" id="lt-${subj}-${w.num}-${i}">${l}</span>
+      </div>`;
+    }).join('');
+
+    const practicoHtml = w.practico && w.practico !== '—'
+      ? `<div class="practico-row"><span class="practico-pill">📋 ${w.practico}</span>${w.notas ? `<span class="practico-pill">📖 Notas ${w.notas}</span>` : ''}</div>` : '';
+
+    html += `<div class="${cardClass}" id="wcard-${subj}-${w.num}">
+      <div class="week-header" onclick="toggleCard('${subj}',${w.num})">
+        <span class="week-num">sem. ${w.num}</span>
+        <div class="week-title-area">
+          <div class="week-title">${w.topic}</div>
+          <div class="week-date">${w.date !== '—' ? w.date : 'fecha por confirmar'}</div>
+        </div>
+        <div class="week-right">
+          <div class="${dotClass}"></div>
+          <span class="understanding-mini" style="color:${understColor(und)}">${und}%</span>
+          <span class="chevron-icon">▾</span>
+        </div>
+      </div>
+      <div class="week-body" id="wbody-${subj}-${w.num}">
+        <div class="lessons-list">${lessonsHtml}</div>
+        ${practicoHtml}
+        <div class="understanding-row">
+          <span class="und-label">entendimiento</span>
+          <input type="range" class="und-slider" min="0" max="100" step="5" value="${und}"
+            oninput="setUnderstanding('${subj}',${w.num},this.value)"
+            style="accent-color:${subj === 'md2' ? 'var(--accent-md2)' : 'var(--accent-log)'}">
+          <span class="und-value" id="und-val-${subj}-${w.num}" style="color:${understColor(und)}">${understLabel(und)}</span>
+        </div>
+        <div class="notes-row">
+          <div class="notes-label">notas personales</div>
+          <textarea class="notes-ta" placeholder="dudas, pendientes, ideas..."
+            oninput="setNotes('${subj}',${w.num},this.value)">${ws.notes}</textarea>
+        </div>
+      </div>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function renderProgress() {
+  const md2Current = getCurrentCourseWeek(MD2_DATES, MD2_WEEKS);
+  const logCurrent = getCurrentCourseWeek(LOG_DATES, LOG_WEEKS);
+  const totalMD2 = MD2_WEEKS.length;
+  const totalLog = LOG_WEEKS.length;
+
+  const md2Done = MD2_WEEKS.filter(w => {
+    const ws = state.md2[w.num];
+    return ws && Object.values(ws.lessons).filter(Boolean).length === w.lessons.length;
+  }).length;
+  const logDone = LOG_WEEKS.filter(w => {
+    const ws = state.log[w.num];
+    return ws && Object.values(ws.lessons).filter(Boolean).length === w.lessons.length;
+  }).length;
+
+  const md2CursoPct = md2Current ? Math.round(md2Current / totalMD2 * 100) : 0;
+  const logCursoPct = logCurrent ? Math.round(logCurrent / totalLog * 100) : 0;
+  const md2YoPct = Math.round(md2Done / totalMD2 * 100);
+  const logYoPct = Math.round(logDone / totalLog * 100);
+
+  document.getElementById('pb-md2-curso').style.width = md2CursoPct + '%';
+  document.getElementById('pb-md2-yo').style.width = md2YoPct + '%';
+  document.getElementById('pb-log-curso').style.width = logCursoPct + '%';
+  document.getElementById('pb-log-yo').style.width = logYoPct + '%';
+  document.getElementById('pct-md2-curso').textContent = md2CursoPct + '%';
+  document.getElementById('pct-md2-yo').textContent = md2YoPct + '%';
+  document.getElementById('pct-log-curso').textContent = logCursoPct + '%';
+  document.getElementById('pct-log-yo').textContent = logYoPct + '%';
+
+  // Banner
+  if (md2Current) {
+    const w = MD2_WEEKS.find(x => x.num === md2Current);
+    document.getElementById('banner-md2-topic').textContent = w ? w.topic : '—';
+    document.getElementById('banner-md2-week').textContent = `Semana ${md2Current} — ${w?.date || ''}`;
+  } else {
+    document.getElementById('banner-md2-topic').textContent = 'Fuera del semestre';
+    document.getElementById('banner-md2-week').textContent = '—';
+  }
+  if (logCurrent) {
+    const w = LOG_WEEKS.find(x => x.num === logCurrent);
+    document.getElementById('banner-log-topic').textContent = w ? w.topic : '—';
+    document.getElementById('banner-log-week').textContent = `Semana ${logCurrent} — ${w?.date || ''}`;
+  } else {
+    document.getElementById('banner-log-topic').textContent = 'Fuera del semestre';
+    document.getElementById('banner-log-week').textContent = '—';
+  }
+}
+
+function renderToday() {
+  const now = today();
+  const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  document.getElementById('today-pill').textContent = now.toLocaleDateString('es-UY', opts);
+}
+
+// ─── INTERACTIONS ─────────────────────────────────────────────────────────────
+function toggleCard(subj, weekNum) {
+  const card = document.getElementById('wcard-' + subj + '-' + weekNum);
+  card.classList.toggle('open');
+}
+
+function toggleLesson(el) {
+  const subj = el.dataset.subj;
+  const week = parseInt(el.dataset.week);
+  const idx = parseInt(el.dataset.idx);
+  const current = !!state[subj][week].lessons[idx];
+  state[subj][week].lessons[idx] = !current;
+  saveState();
+  el.classList.toggle('checked', !current);
+  const textEl = document.getElementById('lt-' + subj + '-' + week + '-' + idx);
+  if (textEl) textEl.classList.toggle('checked', !current);
+  // update dot
+  const w = (subj === 'md2' ? MD2_WEEKS : LOG_WEEKS).find(x => x.num === week);
+  const total = w ? w.lessons.length : 1;
+  const checked = Object.values(state[subj][week].lessons).filter(Boolean).length;
+  const card = document.getElementById('wcard-' + subj + '-' + week);
+  const dot = card?.querySelector('.status-dot');
+  const currentCourse = getCurrentCourseWeek(subj === 'md2' ? MD2_DATES : LOG_DATES, subj === 'md2' ? MD2_WEEKS : LOG_WEEKS);
+  if (dot) {
+    dot.className = 'status-dot';
+    const s = weekStatus(subj, week, currentCourse);
+    if (s !== 'pending') dot.classList.add(s.replace('-', '-'));
+    if (s === 'done') dot.classList.add('done');
+    else if (s === 'current-course') dot.classList.add('current-course');
+    else if (s === 'behind') dot.classList.add('behind');
+  }
+  renderProgress();
+}
+
+function setUnderstanding(subj, weekNum, val) {
+  const v = parseInt(val);
+  state[subj][weekNum].understanding = v;
+  saveState();
+  const el = document.getElementById('und-val-' + subj + '-' + weekNum);
+  if (el) {
+    el.textContent = understLabel(v);
+    el.style.color = understColor(v);
+  }
+  const card = document.getElementById('wcard-' + subj + '-' + weekNum);
+  const mini = card?.querySelector('.understanding-mini');
+  if (mini) {
+    mini.textContent = v + '%';
+    mini.style.color = understColor(v);
+  }
+}
+
+function setNotes(subj, weekNum, val) {
+  state[subj][weekNum].notes = val;
+  saveState();
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+loadState();
+renderToday();
+renderWeeks('md2', MD2_WEEKS, MD2_DATES);
+renderWeeks('log', LOG_WEEKS, LOG_DATES);
+renderProgress();
+</script>
+</body>
+</html>
